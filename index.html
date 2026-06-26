@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry: Angle Pairs Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d061f; 
+            color: #ffffff;
+            overflow: hidden; 
+        }
+        
+        /* Presentation Layout */
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #slide-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+            transform: translateY(20px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            padding-bottom: 5rem;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        @media (min-width: 768px) {
+            .slide {
+                padding: 2rem;
+            }
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        /* Custom UI Elements */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #9333ea, #6b21a8);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: rgba(147, 51, 234, 0.2);
+            color: white;
+            padding: 0.5rem 1.25rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid rgba(168, 85, 247, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(147, 51, 234, 0.5);
+            border-color: #d8b4fe;
+            transform: translateY(-2px);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 28px;
+            width: 28px;
+            border-radius: 50%;
+            background: #F59E0B;
+            cursor: pointer;
+            margin-top: -12px;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.8), inset 0 0 4px rgba(255,255,255,0.8);
+            border: 2px solid white;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        input[type=range]:focus { outline: none; }
+
+        /* SVG Elements */
+        text {
+            text-shadow: 0px 2px 4px rgba(0,0,0,0.8);
+        }
+        .svg-bg {
+            background-color: #1a1438;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* SVG Animations */
+        .fade-in-element {
+            opacity: 0;
+            animation: fadeInAnim 0.5s forwards;
+        }
+        @keyframes fadeInAnim {
+            to { opacity: 1; }
+        }
+
+        /* Highlighting for interactive table */
+        .highlight-path {
+            stroke: #F59E0B !important;
+            stroke-width: 8 !important;
+            filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.9));
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        /* Abstract Background Decoration */
+        .bg-shape {
+            position: absolute;
+            z-index: -1;
+            opacity: 0.15;
+        }
+
+        /* Quiz Button Overrides */
+        .quiz-btn:disabled {
+            opacity: 1;
+            cursor: default;
+        }
+        
+        .grid-card {
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .grid-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            background-color: rgba(139, 92, 246, 0.2);
+            border-color: rgba(168, 85, 247, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Global SVG Defs for Proportional Arrowheads (Rays) -->
+<svg width="0" height="0" class="absolute pointer-events-none">
+    <defs>
+        <!-- Standard scale markers -->
+        <marker id="arrow-gray" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto-start-reverse">
+            <polygon points="0 0, 5 2, 0 4" fill="#9CA3AF"/>
+        </marker>
+        <marker id="arrow-gray-light" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto-start-reverse">
+            <polygon points="0 0, 5 2, 0 4" fill="#D1D5DB"/>
+        </marker>
+        <marker id="arrow-blue" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto-start-reverse">
+            <polygon points="0 0, 5 2, 0 4" fill="#60A5FA"/>
+        </marker>
+        <marker id="arrow-amber" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto-start-reverse">
+            <polygon points="0 0, 5 2, 0 4" fill="#FBBF24"/>
+        </marker>
+        <marker id="arrow-red" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto-start-reverse">
+            <polygon points="0 0, 5 2, 0 4" fill="#F87171"/>
+        </marker>
+        <marker id="arrow-purple" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto-start-reverse">
+            <polygon points="0 0, 5 2, 0 4" fill="#C084FC"/>
+        </marker>
+        <marker id="arrow-green" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto-start-reverse">
+            <polygon points="0 0, 5 2, 0 4" fill="#34D399"/>
+        </marker>
+        <marker id="arrow-white" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto-start-reverse">
+            <polygon points="0 0, 5 2, 0 4" fill="#FFFFFF"/>
+        </marker>
+        
+        <!-- Highly optimized small markers for mini-graphics (Slide 6 & Slide 14) -->
+        <marker id="arrow-green-small" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto-start-reverse">
+            <polygon points="0 0, 4 1.5, 0 3" fill="#34D399"/>
+        </marker>
+        <marker id="arrow-purple-small" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto-start-reverse">
+            <polygon points="0 0, 4 1.5, 0 3" fill="#C084FC"/>
+        </marker>
+        <marker id="arrow-blue-small" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto-start-reverse">
+            <polygon points="0 0, 4 1.5, 0 3" fill="#60A5FA"/>
+        </marker>
+        <marker id="arrow-amber-small" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto-start-reverse">
+            <polygon points="0 0, 4 1.5, 0 3" fill="#FBBF24"/>
+        </marker>
+        <marker id="arrow-gray-light-small" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto-start-reverse">
+            <polygon points="0 0, 4 1.5, 0 3" fill="#D1D5DB"/>
+        </marker>
+        <marker id="arrow-red-small" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto-start-reverse">
+            <polygon points="0 0, 4 1.5, 0 3" fill="#F87171"/>
+        </marker>
+        <marker id="arrow-white-small" markerWidth="4" markerHeight="3" refX="3.5" refY="1.5" orient="auto-start-reverse">
+            <polygon points="0 0, 4 1.5, 0 3" fill="#FFFFFF"/>
+        </marker>
+        
+        <!-- Local slide 5 overrides for thick rays -->
+        <marker id="arrowhead-purple-slide5" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto">
+            <polygon points="0 0, 5 2, 0 4" fill="#C084FC" />
+        </marker>
+        <marker id="arrowhead-green-slide5" markerWidth="5" markerHeight="4" refX="4" refY="2" orient="auto">
+            <polygon points="0 0, 5 2, 0 4" fill="#34D399" />
+        </marker>
+    </defs>
+</svg>
+
+<div id="app-container">
+    
+    <!-- Abstract Background -->
+    <svg class="bg-shape top-0 left-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <polygon points="0,0 40,0 20,100 0,100" fill="#6d28d9" />
+        <polygon points="100,0 60,0 80,100 100,100" fill="#9333ea" />
+        <circle cx="80" cy="20" r="15" fill="#d946ef" opacity="0.4"/>
+    </svg>
+
+    <!-- Header / Progress bar / Advanced Stopwatch -->
+    <header class="p-4 flex justify-between items-center z-10 glass-panel m-4 rounded-full border-b-0 shadow-lg">
+        <div class="font-bold text-lg text-purple-200 w-1/3 text-left">Geometry | Angle Relationships</div>
+        
+        <!-- Stopwatch Timer UI -->
+        <div class="w-1/3 flex justify-center">
+            <div class="flex items-center bg-gray-900/60 rounded-full border border-gray-600 shadow-inner overflow-hidden">
+                <div id="stopwatch" class="font-mono text-xl font-bold text-amber-400 px-5 py-1.5 cursor-pointer hover:bg-gray-800 transition" onclick="toggleTimer()" title="Click to Pause/Resume">00:00</div>
+                <button onclick="resetTimer()" class="px-3 py-1.5 bg-gray-800/80 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition border-l border-gray-600 flex items-center justify-center" title="Restart Timer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 text-sm text-gray-200 w-1/3">
+            <span id="slide-counter" class="font-semibold">Slide 1 of X</span>
+            <div class="w-32 h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
+                <div id="progress-bar" class="h-full bg-gradient-to-r from-purple-400 to-amber-400 w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Slide Container -->
+    <main id="slide-container">
+
+        <!-- Slide 0: Title -->
+        <section class="slide w-full h-full active" id="slide-0">
+            <div class="w-full max-w-5xl flex flex-col justify-center items-center h-full">
+                <div class="max-w-3xl glass-panel p-6 md:p-12 rounded-2xl border border-purple-400/40 relative overflow-hidden text-center">
+                    <div class="absolute -top-10 -left-10 w-32 h-32 bg-purple-500 rounded-full blur-3xl opacity-50"></div>
+                    <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-amber-400 rounded-full blur-3xl opacity-30"></div>
+                    
+                    <h2 class="text-lg md:text-xl font-semibold text-purple-300 mb-2 uppercase tracking-widest">Geometry</h2>
+                    <h1 class="text-4xl md:text-7xl font-bold mb-6 text-white leading-tight">Angle <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-amber-300">Pairs</span></h1>
+                    <p class="text-lg md:text-xl text-gray-100 mb-10 max-w-xl mx-auto">An Interactive Exploration of Adjacent, Complementary, Supplementary, Linear Pairs, and Vertical angles.</p>
+                    
+                    <button onclick="nextSlide()" class="btn-primary text-base md:text-lg flex items-center justify-center gap-2 mx-auto">
+                        Start Exploration
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 1: Real-Life Problem Hook -->
+        <section class="slide w-full h-full" id="slide-1">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <div class="w-full mb-8 text-center">
+                    <h2 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-500 mb-2">The Intersection Dilemma</h2>
+                    <h3 class="text-xl text-gray-200">Why do angles matter in the real world?</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center glass-panel p-8">
+                    <div>
+                        <p class="text-xl text-white mb-4 leading-relaxed font-medium">Imagine you are a city planner tasked with redesigning a major traffic intersection.</p>
+                        <p class="text-lg text-gray-200 mb-6 leading-relaxed">If two roads cross each other and one angle is <strong class="text-amber-400 font-bold">40°</strong>, how sharp are the turns for the other vehicles? If the angles are too sharp, trucks can't turn. If they are too wide, pedestrians have to cross too far.</p>
+                        <div class="bg-purple-900/40 border border-purple-500/50 p-4 rounded-xl">
+                            <p class="text-purple-200 font-semibold italic text-lg">"By knowing just ONE angle in an intersection, geometry allows us to instantly calculate all the others without ever pulling out a protractor."</p>
+                            <p class="text-white mt-3 font-bold text-xl">Let's find out how!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="svg-bg rounded-xl aspect-video flex items-center justify-center relative p-4 border border-gray-600">
+                        <svg viewBox="-100 -100 200 200" class="w-full h-full">
+                            <!-- Road Background -->
+                            <rect x="-150" y="-150" width="300" height="300" fill="#1f2937" />
+                            <!-- Road 1 -->
+                            <line x1="-150" y1="0" x2="150" y2="0" stroke="#374151" stroke-width="40" />
+                            <line x1="-150" y1="0" x2="150" y2="0" stroke="#FBBF24" stroke-width="2" stroke-dasharray="10 5" />
+                            <!-- Road 2 (Angled) -->
+                            <g transform="rotate(-40)">
+                                <line x1="-150" y1="0" x2="150" y2="0" stroke="#374151" stroke-width="40" />
+                                <line x1="-150" y1="0" x2="150" y2="0" stroke="#FBBF24" stroke-width="2" stroke-dasharray="10 5" />
+                            </g>
+                            <!-- Center intersection highlight -->
+                            <circle cx="0" cy="0" r="15" fill="#EF4444" opacity="0.5" class="animate-pulse"/>
+                            
+                            <!-- The Known Angle -->
+                            <path d="M 30 0 A 30 30 0 0 0 23 -19" fill="none" stroke="#60A5FA" stroke-width="4" />
+                            <text x="45" y="-10" fill="#93C5FD" font-size="14" font-weight="bold">40°</text>
+                            
+                            <!-- Unknown Angles -->
+                            <text x="-40" y="20" fill="white" font-size="16" font-weight="bold">?</text>
+                            <text x="0" y="45" fill="white" font-size="16" font-weight="bold">?</text>
+                            <text x="0" y="-35" fill="white" font-size="16" font-weight="bold">?</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 2: Lesson Objectives -->
+        <section class="slide w-full h-full" id="slide-2">
+            <div class="w-full max-w-4xl flex flex-col justify-center items-center h-full">
+                <div class="glass-panel p-10 relative overflow-hidden border border-purple-500/30 w-full">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl"></div>
+                    
+                    <h2 class="text-4xl font-bold text-white mb-8 border-b border-purple-500/40 pb-4 flex items-center gap-4">
+                        <svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Lesson Objectives
+                    </h2>
+                    
+                    <div class="space-y-6 text-xl text-gray-100">
+                        <div class="flex items-start gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition">
+                            <div class="mt-1 bg-purple-600 rounded-full p-1 text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <p><strong class="text-purple-300">Identify and define</strong> the five key angle pairs: adjacent, complementary, supplementary, vertical angles, and linear pairs.</p>
+                        </div>
+                        
+                        <div class="flex items-start gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition">
+                            <div class="mt-1 bg-amber-500 rounded-full p-1 text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <p><strong class="text-amber-300">Determine the measure</strong> of an unknown angle by applying the mathematical rules of these angle relationships.</p>
+                        </div>
+                        
+                        <div class="flex items-start gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition">
+                            <div class="mt-1 bg-blue-500 rounded-full p-1 text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <p><strong class="text-blue-300">Apply your knowledge</strong> of angle pairs to solve geometry and real-world problems.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: Pre-Test -->
+        <section class="slide w-full h-full" id="slide-3">
+            <div class="w-full max-w-4xl flex flex-col justify-center items-center h-full">
+                <div class="glass-panel p-8 w-full relative min-h-[450px] flex flex-col border border-amber-500/40">
+                    <div class="flex justify-between items-center border-b border-amber-500/40 pb-4 mb-6">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Let's check what you already know!
+                        </h2>
+                        <span class="bg-amber-900/50 text-amber-200 px-3 py-1 rounded-full text-sm font-mono border border-amber-400/50" id="pretest-counter">Question 1 of 5</span>
+                    </div>
+                    
+                    <div id="pretest-content" class="flex-grow flex flex-col justify-center transition-opacity duration-300">
+                        <h3 id="pretest-q" class="text-xl md:text-2xl text-white mb-8 text-center font-semibold leading-relaxed">Loading question...</h3>
+                        <div id="pretest-options" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Options injected by JS -->
+                        </div>
+                    </div>
+
+                    <div id="pretest-results" class="hidden flex-grow flex-col items-center justify-center text-center animate-fade-in">
+                        <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/50">
+                            <svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <h3 class="text-3xl font-bold text-white mb-2">Pre-Test Complete!</h3>
+                        <p class="text-xl text-gray-200 mb-8">You scored <span id="pretest-score-text" class="text-amber-400 font-bold text-3xl mx-2">0/5</span></p>
+                        <button onclick="nextSlide()" class="btn-primary flex items-center gap-2">
+                            Move to Definitions
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: Definition of Terms -->
+        <section class="slide w-full h-full" id="slide-4">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <div class="w-full mb-8 text-center">
+                    <h2 class="text-4xl font-bold text-white mb-2 text-fuchsia-400">Definition of Terms</h2>
+                    <h3 class="text-xl text-gray-200">The language of geometry.</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                    <div class="glass-panel p-6 border border-purple-500/30 hover:bg-white/5 transition">
+                        <h4 class="text-2xl font-bold text-amber-400 mb-2 border-b border-gray-700 pb-2">Angle</h4>
+                        <p class="text-gray-100 text-lg">A figure formed by two rays sharing a common endpoint.</p>
+                    </div>
+                    <div class="glass-panel p-6 border border-purple-500/30 hover:bg-white/5 transition">
+                        <h4 class="text-2xl font-bold text-cyan-400 mb-2 border-b border-gray-700 pb-2">Vertex</h4>
+                        <p class="text-gray-100 text-lg">The common endpoint where two rays meet to form an angle.</p>
+                    </div>
+                    <div class="glass-panel p-6 border border-purple-500/30 hover:bg-white/5 transition">
+                        <h4 class="text-2xl font-bold text-green-400 mb-2 border-b border-gray-700 pb-2">Ray (Side)</h4>
+                        <p class="text-gray-100 text-lg">A line with a single endpoint that extends infinitely in one direction. Forms the sides of an angle.</p>
+                    </div>
+                    <div class="glass-panel p-6 border border-purple-500/30 hover:bg-white/5 transition">
+                        <h4 class="text-2xl font-bold text-pink-400 mb-2 border-b border-gray-700 pb-2">Degrees (°)</h4>
+                        <p class="text-gray-100 text-lg">The standard unit of measurement used to quantify the size or openness of an angle.</p>
+                    </div>
+                    <div class="glass-panel p-6 border border-purple-500/30 hover:bg-white/5 transition">
+                        <h4 class="text-2xl font-bold text-blue-400 mb-2 border-b border-gray-700 pb-2">Congruent (≅)</h4>
+                        <p class="text-gray-100 text-lg">Having the exact same measure. If Angle A is 50° and Angle B is 50°, they are congruent.</p>
+                    </div>
+                    <div class="glass-panel p-6 border border-purple-500/30 hover:bg-white/5 transition">
+                        <h4 class="text-2xl font-bold text-purple-400 mb-2 border-b border-gray-700 pb-2">Intersection</h4>
+                        <p class="text-gray-100 text-lg">The point where two or more lines cross each other, forming multiple angles.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: What is an angle (Interactive Build) -->
+        <section class="slide w-full h-full" id="slide-5">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <div class="w-full mb-6">
+                    <h2 class="text-3xl font-bold text-white mb-2">Geometry Fundamentals</h2>
+                    <h3 class="text-xl text-purple-300 border-b border-purple-500/40 pb-2">Let's build an angle.</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full items-center">
+                    <div class="glass-panel p-8 text-lg text-gray-100 space-y-4 font-medium">
+                        <p>An angle is formed by two <strong>rays</strong> (sides) sharing a common endpoint — called the <strong class="text-amber-400">vertex</strong>.</p>
+                        <p>Angles are measured in degrees (°).</p>
+                        
+                        <div class="mt-8 space-y-2">
+                            <button id="btn-build-1" onclick="buildAngleStep(1)" class="w-full text-left p-3 rounded bg-purple-900/60 hover:bg-purple-700 transition border border-purple-400 flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center font-bold text-white text-sm">1</span> Plot point B (vertex)
+                            </button>
+                            <button id="btn-build-2" onclick="buildAngleStep(2)" disabled class="w-full text-left p-3 rounded bg-gray-800/50 opacity-50 transition border border-gray-500 flex items-center gap-3 text-gray-300">
+                                <span class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center font-bold text-sm">2</span> Draw Ray BA (Side 1)
+                            </button>
+                            <button id="btn-build-3" onclick="buildAngleStep(3)" disabled class="w-full text-left p-3 rounded bg-gray-800/50 opacity-50 transition border border-gray-500 flex items-center gap-3 text-gray-300">
+                                <span class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center font-bold text-sm">3</span> Draw Ray BC (Side 2)
+                            </button>
+                            <button id="btn-build-4" onclick="buildAngleStep(4)" disabled class="w-full text-left p-3 rounded bg-gray-800/50 opacity-50 transition border border-gray-500 flex items-center gap-3 text-gray-300">
+                                <span class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center font-bold text-sm">4</span> Label Angle ∠ABC
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="svg-bg rounded-xl aspect-square flex items-center justify-center relative overflow-hidden">
+                        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" class="absolute opacity-10">
+                            <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="1"/></pattern></defs>
+                            <rect width="100%" height="100%" fill="url(#grid)" />
+                        </svg>
+
+                        <svg viewBox="0 0 400 400" class="w-full h-full relative z-10 font-sans">
+                            <g id="s2-g-1" class="opacity-0 transition-opacity duration-500">
+                                <circle cx="200" cy="250" r="6" fill="#FBBF24" />
+                                <text x="195" y="275" fill="#FBBF24" font-size="20" font-weight="bold">B</text>
+                                <text x="215" y="255" fill="white" font-size="16">Vertex</text>
+                            </g>
+
+                            <g id="s2-g-2" class="opacity-0 transition-opacity duration-500">
+                                <line x1="200" y1="250" x2="80" y2="100" stroke="#C084FC" stroke-width="5" marker-end="url(#arrowhead-purple-slide5)" />
+                                <circle cx="120" cy="150" r="5" fill="white" />
+                                <text x="100" y="140" fill="white" font-size="20" font-weight="bold">A</text>
+                                <text x="130" y="170" fill="#E9D5FF" font-size="16" transform="rotate(-51 130 170)">Side = Ray BA</text>
+                            </g>
+
+                            <g id="s2-g-3" class="opacity-0 transition-opacity duration-500">
+                                <line x1="200" y1="250" x2="350" y2="150" stroke="#34D399" stroke-width="5" marker-end="url(#arrowhead-green-slide5)" />
+                                <circle cx="300" cy="183" r="5" fill="white" />
+                                <text x="310" y="175" fill="white" font-size="20" font-weight="bold">C</text>
+                                <text x="250" y="235" fill="#A7F3D0" font-size="16" transform="rotate(-33 250 235)">Side = Ray BC</text>
+                            </g>
+
+                            <g id="s2-g-4" class="opacity-0 transition-opacity duration-500">
+                                <path d="M 175 218 A 40 40 0 0 1 233 228" fill="none" stroke="#FBBF24" stroke-width="4" />
+                                <rect x="160" y="150" width="80" height="30" rx="5" fill="#FBBF24" opacity="0.3" />
+                                <text x="200" y="170" fill="#FDE68A" font-size="18" font-weight="bold" text-anchor="middle">∠ABC</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: Overview Menu (Clickable with proportional arrows) -->
+        <section class="slide w-full h-full" id="slide-6">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                 <div class="w-full mb-6">
+                    <h2 class="text-3xl font-bold text-white mb-2">Meet the Angle Pairs</h2>
+                    <h3 class="text-xl text-purple-300 border-b border-purple-500/40 pb-2">Overview of 5 key relationships. <span class="text-amber-300 italic text-lg">Click any card to explore!</span></h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mt-4">
+                    <!-- Adjacent -->
+                    <div class="glass-panel grid-card p-6 flex flex-col items-center text-center" onclick="goToSlide(7)">
+                        <svg viewBox="0 0 100 100" class="w-24 h-24 mb-4 drop-shadow-md">
+                            <line x1="10" y1="90" x2="90" y2="90" stroke="#34D399" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-green-small)"/>
+                            <line x1="50" y1="90" x2="20" y2="20" stroke="#C084FC" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-purple-small)"/>
+                            <line x1="50" y1="90" x2="80" y2="30" stroke="#60A5FA" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-blue-small)"/>
+                            <circle cx="50" cy="90" r="4" fill="white"/>
+                        </svg>
+                        <h4 class="text-2xl font-bold text-white mb-2">Adjacent</h4>
+                        <p class="text-base text-gray-200">Share a common vertex and side, no overlap.</p>
+                    </div>
+
+                    <!-- Complementary -->
+                    <div class="glass-panel grid-card p-6 flex flex-col items-center text-center" onclick="goToSlide(8)">
+                        <svg viewBox="0 0 100 100" class="w-24 h-24 mb-4 drop-shadow-md">
+                            <line x1="20" y1="80" x2="80" y2="80" stroke="#D1D5DB" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-gray-light-small)"/>
+                            <line x1="20" y1="80" x2="20" y2="20" stroke="#D1D5DB" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-gray-light-small)"/>
+                            <line x1="20" y1="80" x2="70" y2="30" stroke="#FBBF24" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-amber-small)"/>
+                            <rect x="20" y="72" width="8" height="8" fill="none" stroke="#D1D5DB" stroke-width="2"/>
+                        </svg>
+                        <h4 class="text-2xl font-bold text-white mb-2">Complementary</h4>
+                        <p class="text-base text-gray-200">Two angles whose measures add up to exactly 90°.</p>
+                    </div>
+
+                    <!-- Supplementary -->
+                    <div class="glass-panel grid-card p-6 flex flex-col items-center text-center" onclick="goToSlide(9)">
+                        <svg viewBox="0 0 100 100" class="w-24 h-24 mb-4 drop-shadow-md">
+                            <!-- Separate angles with proportional arrows -->
+                            <line x1="40" y1="80" x2="10" y2="80" stroke="#C084FC" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-purple-small)"/>
+                            <line x1="40" y1="80" x2="25" y2="40" stroke="#C084FC" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-purple-small)"/>
+                            
+                            <line x1="60" y1="80" x2="90" y2="80" stroke="#FBBF24" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-amber-small)"/>
+                            <line x1="60" y1="80" x2="75" y2="40" stroke="#FBBF24" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-amber-small)"/>
+                            <text x="50" y="100" fill="white" font-size="12" text-anchor="middle">Separated</text>
+                        </svg>
+                        <h4 class="text-2xl font-bold text-white mb-2">Supplementary</h4>
+                        <p class="text-base text-gray-200">Two angles whose measures add up to exactly 180°.</p>
+                    </div>
+
+                    <!-- Linear Pair -->
+                    <div class="glass-panel grid-card p-6 flex flex-col items-center text-center" onclick="goToSlide(10)">
+                         <svg viewBox="0 0 100 100" class="w-24 h-24 mb-4 drop-shadow-md">
+                            <line x1="10" y1="80" x2="90" y2="80" stroke="#F87171" stroke-width="5" stroke-linecap="round" marker-start="url(#arrow-red-small)" marker-end="url(#arrow-red-small)"/>
+                            <line x1="50" y1="80" x2="50" y2="20" stroke="#C084FC" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-purple-small)"/>
+                            <circle cx="50" cy="80" r="4" fill="#FFFFFF"/>
+                        </svg>
+                        <h4 class="text-2xl font-bold text-white mb-2">Linear Pair</h4>
+                        <p class="text-base text-gray-200">Adjacent AND supplementary. Forms a straight line.</p>
+                    </div>
+
+                    <!-- Vertical -->
+                    <div class="glass-panel grid-card p-6 flex flex-col items-center text-center" onclick="goToSlide(11)">
+                        <svg viewBox="0 0 100 100" class="w-24 h-24 mb-4 drop-shadow-md">
+                            <line x1="20" y1="20" x2="80" y2="80" stroke="#60A5FA" stroke-width="5" stroke-linecap="round" marker-start="url(#arrow-blue-small)" marker-end="url(#arrow-blue-small)"/>
+                            <line x1="20" y1="80" x2="80" y2="20" stroke="#60A5FA" stroke-width="5" stroke-linecap="round" marker-start="url(#arrow-blue-small)" marker-end="url(#arrow-blue-small)"/>
+                            <path d="M 40 40 Q 50 30 60 40" fill="none" stroke="#FBBF24" stroke-width="3"/>
+                            <path d="M 40 60 Q 50 70 60 60" fill="none" stroke="#FBBF24" stroke-width="3"/>
+                        </svg>
+                        <h4 class="text-2xl font-bold text-white mb-2">Vertical</h4>
+                        <p class="text-base text-gray-200">Opposite angles at an intersection. Always equal.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 7: Adjacent Angles -->
+        <section class="slide w-full h-full" id="slide-7">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <div class="flex justify-between items-end w-full mb-6 border-b border-purple-500/40 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2 text-fuchsia-400">Adjacent Angles</h2>
+                        <h3 class="text-xl text-gray-200">Next-door neighbors</h3>
+                    </div>
+                    <button onclick="goToSlide(6)" class="btn-secondary flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
+                        Back to Pairs
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 w-full items-center">
+                    <div class="glass-panel p-8 text-lg text-gray-100 space-y-4 flex flex-col justify-center">
+                        <p><strong>Adjacent angles</strong> share a <span class="text-amber-400 font-bold">common vertex</span> and a <span class="text-blue-400 font-bold">common side (ray)</span>, but their interiors do not overlap.</p>
+                        <p class="text-gray-200 text-base">They are placed side-by-side. The total angle is the sum of the two smaller adjacent angles.</p>
+                        
+                        <div class="bg-gray-900/60 p-6 rounded-xl border border-gray-600 mt-6 text-center shadow-lg">
+                            <div class="text-3xl font-mono mb-4 flex justify-center items-center gap-4 text-white">
+                                <span id="adj-val-1" class="text-pink-400 font-bold">60°</span>
+                                <span class="text-gray-300">+</span>
+                                <span id="adj-val-2" class="text-cyan-400 font-bold">60°</span>
+                                <span class="text-gray-300">=</span>
+                                <span class="text-white font-bold">120° Total</span>
+                            </div>
+                            <p class="text-sm text-gray-200">Drag to move the <span class="text-blue-400 font-semibold">Shared Side</span>.</p>
+                            <input type="range" id="adj-slider" min="15" max="105" value="60" class="mt-4 w-full">
+                        </div>
+                    </div>
+
+                    <div class="svg-bg rounded-xl flex items-center justify-center relative p-4 min-h-[400px]">
+                         <svg viewBox="-180 -280 500 350" class="w-full h-full relative z-10 font-sans" id="adj-svg">
+                            <!-- Outer Rays (Fixed at 120 deg) -->
+                            <line x1="0" y1="0" x2="280" y2="0" stroke="#D1D5DB" stroke-width="5" marker-end="url(#arrow-gray-light)" />
+                            <g transform="rotate(-120)">
+                                <line x1="0" y1="0" x2="280" y2="0" stroke="#D1D5DB" stroke-width="5" marker-end="url(#arrow-gray-light)" />
+                            </g>
+                            
+                            <!-- Dynamic Arcs -->
+                            <path id="adj-arc-1" d="" fill="none" stroke="#F472B6" stroke-width="6" opacity="0.9"/>
+                            <path id="adj-arc-2" d="" fill="none" stroke="#22D3EE" stroke-width="6" opacity="0.9"/>
+
+                            <!-- Dynamic Shared Ray -->
+                            <g id="adj-dynamic-ray">
+                                <line x1="0" y1="0" x2="250" y2="0" stroke="#60A5FA" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
+                                <circle cx="0" cy="0" r="0" fill="white" />
+                                <text x="250" y="25" fill="#93C5FD" font-size="16" font-weight="bold">Shared Side</text>
+                            </g>
+
+                            <!-- Vertex -->
+                            <circle cx="0" cy="0" r="8" fill="#FBBF24" />
+                            <text x="0" y="30" fill="#FBBF24" font-size="16" font-weight="bold" text-anchor="middle">Shared Vertex</text>
+                            
+                            <!-- Labels -->
+                            <text id="adj-label-1" x="0" y="0" fill="#F472B6" font-size="24" font-weight="bold" text-anchor="middle" dominant-baseline="middle">60°</text>
+                            <text id="adj-label-2" x="0" y="0" fill="#22D3EE" font-size="24" font-weight="bold" text-anchor="middle" dominant-baseline="middle">60°</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 8: Complementary -->
+        <section class="slide w-full h-full" id="slide-8">
+            <div class="w-full max-w-5xl flex flex-col justify-center">
+                <div class="flex justify-between items-end w-full mb-6 border-b border-purple-500/40 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2 text-amber-400">Complementary Angles</h2>
+                        <h3 class="text-xl text-gray-200">Sum exactly to 90°</h3>
+                    </div>
+                    <button onclick="goToSlide(6)" class="btn-secondary flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
+                        Back to Pairs
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 w-full items-center">
+                    <div class="glass-panel p-8 text-lg text-gray-100 space-y-4 flex flex-col justify-center">
+                        <p>Two angles are <strong>complementary</strong> when their measures add up to exactly <strong class="text-amber-400">90°</strong> — together they form a perfect right angle.</p>
+                        
+                        <div class="bg-gray-900/60 p-6 rounded-xl border border-gray-600 mt-6 text-center shadow-lg">
+                            <div class="text-4xl font-mono mb-4 flex justify-center items-center gap-4 text-white">
+                                <span id="comp-val-1" class="text-purple-400 font-bold">45°</span>
+                                <span class="text-gray-300">+</span>
+                                <span id="comp-val-2" class="text-green-400 font-bold">45°</span>
+                                <span class="text-gray-300">=</span>
+                                <span class="text-white font-bold">90°</span>
+                            </div>
+                            <p class="text-sm text-gray-200">Drag the slider to adjust the dividing ray.</p>
+                            <input type="range" id="comp-slider" min="5" max="85" value="45" class="mt-4 w-full">
+                        </div>
+                    </div>
+
+                    <div class="svg-bg rounded-xl flex items-center justify-center relative p-4 min-h-[400px]">
+                         <svg viewBox="-50 -350 400 400" class="w-full h-full relative z-10 font-sans" id="comp-svg">
+                            <!-- Right Angle Base -->
+                            <line x1="0" y1="0" x2="300" y2="0" stroke="#9CA3AF" stroke-width="5" marker-end="url(#arrow-gray)" />
+                            <line x1="0" y1="0" x2="0" y2="-300" stroke="#9CA3AF" stroke-width="5" marker-end="url(#arrow-gray)" />
+                            <!-- Right angle square marker -->
+                            <rect x="0" y="-35" width="35" height="35" fill="none" stroke="#9CA3AF" stroke-width="3" />
+                            
+                            <!-- Dynamic Arcs -->
+                            <path id="comp-arc-1" d="" fill="none" stroke="#A78BFA" stroke-width="6" opacity="0.9"/>
+                            <path id="comp-arc-2" d="" fill="none" stroke="#34D399" stroke-width="6" opacity="0.9"/>
+
+                            <!-- Dynamic Ray -->
+                            <g id="comp-dynamic-ray">
+                                <line x1="0" y1="0" x2="250" y2="0" stroke="#FBBF24" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-amber)"/>
+                            </g>
+
+                            <!-- Vertex -->
+                            <circle cx="0" cy="0" r="8" fill="white" />
+                            
+                            <!-- Labels -->
+                            <text id="comp-label-1" x="50" y="-20" fill="#C084FC" font-size="28" font-weight="bold" text-anchor="middle" dominant-baseline="middle">45°</text>
+                            <text id="comp-label-2" x="20" y="-50" fill="#6EE7B7" font-size="28" font-weight="bold" text-anchor="middle" dominant-baseline="middle">45°</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 9: Supplementary Separated (Centred and mathematically recalibrated) -->
+        <section class="slide w-full h-full" id="slide-9">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <div class="flex justify-between items-end w-full mb-4 md:mb-6 border-b border-purple-500/40 pb-4">
+                    <div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-white mb-2 text-green-400">Supplementary Angles</h2>
+                        <h3 class="text-lg md:text-xl text-gray-200">Sum exactly to 180°</h3>
+                    </div>
+                    <button onclick="goToSlide(6)" class="btn-secondary flex items-center gap-2 text-sm md:text-base">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
+                        <span class="hidden sm:inline">Back to Pairs</span>
+                        <span class="sm:hidden">Back</span>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 w-full items-center">
+                    <div class="glass-panel p-6 md:p-8 text-base md:text-lg text-gray-100 space-y-4 flex flex-col justify-center">
+                        <p><strong>Supplementary angles</strong> are two angles whose measures sum to exactly <strong class="text-green-400">180°</strong>.</p>
+                        <p class="text-gray-200 text-sm md:text-base">They do <em>not</em> need to be attached! No matter where they are, if they add to 180°, they are supplementary.</p>
+                        
+                        <div class="bg-gray-900/60 p-4 md:p-6 rounded-xl border border-gray-600 mt-4 md:mt-6 text-center shadow-lg">
+                            <div class="text-3xl md:text-4xl font-mono mb-4 flex justify-center items-center gap-2 md:gap-4 text-white">
+                                <span id="sep-supp-val-1" class="text-purple-400 font-bold">50°</span>
+                                <span class="text-gray-300">+</span>
+                                <span id="sep-supp-val-2" class="text-amber-400 font-bold">130°</span>
+                                <span class="text-gray-300">=</span>
+                                <span class="text-white font-bold">180°</span>
+                            </div>
+                            <p class="text-sm text-gray-200">Drag the slider to adjust the pair.</p>
+                            <input type="range" id="sep-supp-slider" min="10" max="170" value="130" class="mt-4 w-full">
+                        </div>
+                    </div>
+
+                    <div class="svg-bg rounded-xl flex items-center justify-center relative p-4 min-h-[250px] md:min-h-[400px]">
+                         <!-- Centered viewBox supporting much larger, clearer, and more balanced geometries -->
+                         <svg viewBox="-260 -180 520 280" class="w-full h-full relative z-10 font-sans" id="sep-supp-svg">
+                            <!-- Angle 1 (Left Side - Brought closer to center and scaled up) -->
+                            <g transform="translate(-85, 30)">
+                                <line x1="0" y1="0" x2="-140" y2="0" stroke="#D1D5DB" stroke-width="5" marker-end="url(#arrow-gray-light)"/>
+                                <g id="sep-supp-ray-1">
+                                    <line x1="0" y1="0" x2="-140" y2="0" stroke="#C084FC" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-purple)"/>
+                                </g>
+                                <path id="sep-supp-arc-1" fill="none" stroke="#C084FC" stroke-width="5" opacity="0.9"/>
+                                <text id="sep-supp-label-1" fill="#E9D5FF" font-size="28" font-weight="bold" text-anchor="middle" dominant-baseline="middle">50°</text>
+                                <circle cx="0" cy="0" r="6" fill="white" />
+                            </g>
+
+                            <!-- Angle 2 (Right Side - Brought closer to center and scaled up) -->
+                            <g transform="translate(85, 30)">
+                                <line x1="0" y1="0" x2="140" y2="0" stroke="#D1D5DB" stroke-width="5" marker-end="url(#arrow-gray-light)"/>
+                                <g id="sep-supp-ray-2">
+                                    <line x1="0" y1="0" x2="140" y2="0" stroke="#FBBF24" stroke-width="6" stroke-linecap="round" marker-end="url(#arrow-amber)"/>
+                                </g>
+                                <path id="sep-supp-arc-2" fill="none" stroke="#FBBF24" stroke-width="5" opacity="0.9"/>
+                                <text id="sep-supp-label-2" fill="#FDE68A" font-size="28" font-weight="bold" text-anchor="middle" dominant-baseline="middle">130°</text>
+                                <circle cx="0" cy="0" r="6" fill="white" />
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 10: Linear Pair -->
+        <section class="slide w-full h-full" id="slide-10">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <div class="flex justify-between items-end w-full mb-6 border-b border-purple-500/40 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2 text-red-400">Linear Pair</h2>
+                        <h3 class="text-xl text-gray-200">Adjacent + Supplementary</h3>
+                    </div>
+                    <button onclick="goToSlide(6)" class="btn-secondary flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
+                        Back to Pairs
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 w-full items-center">
+                    <div class="glass-panel p-8 text-lg text-gray-100 space-y-4 flex flex-col justify-center">
+                        <p>A <strong>Linear Pair</strong> is a pair of adjacent angles formed by intersecting lines.</p>
+                        <p class="text-gray-200 text-base">Because they are supplementary (sum to 180°) and adjacent (share a side), their non-shared sides form a perfect <strong>straight line</strong>.</p>
+                        
+                        <div class="bg-gray-900/60 p-6 rounded-xl border border-gray-600 mt-6 text-center shadow-lg">
+                            <div class="text-4xl font-mono mb-4 flex justify-center items-center gap-4 text-white">
+                                <span id="lin-val-1" class="text-purple-400 font-bold">130°</span>
+                                <span class="text-gray-300">+</span>
+                                <span id="lin-val-2" class="text-amber-400 font-bold">50°</span>
+                                <span class="text-gray-300">=</span>
+                                <span class="text-red-400 font-bold">180°</span>
+                            </div>
+                            <p class="text-sm text-gray-200">Drag to change the shared side of the line.</p>
+                            <input type="range" id="lin-slider" min="10" max="170" value="130" class="mt-4 w-full">
+                        </div>
+                    </div>
+
+                    <div class="svg-bg rounded-xl flex items-center justify-center relative p-4 min-h-[400px]">
+                         <svg viewBox="-200 -200 400 300" class="w-full h-full relative z-10 font-sans" id="lin-svg">
+                            <!-- Straight Line Base -->
+                            <line x1="-180" y1="0" x2="180" y2="0" stroke="#F87171" stroke-width="6" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>
+                            
+                            <text x="0" y="30" fill="#FCA5A5" font-size="16" font-weight="bold" text-anchor="middle">Straight Line = 180° Total</text>
+
+                            <!-- Dynamic Arcs -->
+                            <path id="lin-arc-1" d="" fill="none" stroke="#C084FC" stroke-width="6" opacity="0.9"/>
+                            <path id="lin-arc-2" d="" fill="none" stroke="#FBBF24" stroke-width="6" opacity="0.9"/>
+
+                            <!-- Dynamic Ray -->
+                            <g id="lin-dynamic-ray">
+                                <line x1="0" y1="0" x2="150" y2="0" stroke="#60A5FA" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
+                            </g>
+
+                            <!-- Vertex -->
+                            <circle cx="0" cy="0" r="8" fill="white" />
+                            
+                            <!-- Labels -->
+                            <text id="lin-label-1" x="0" y="0" fill="#E9D5FF" font-size="28" font-weight="bold" text-anchor="middle" dominant-baseline="middle">130°</text>
+                            <text id="lin-label-2" x="0" y="0" fill="#FDE68A" font-size="28" font-weight="bold" text-anchor="middle" dominant-baseline="middle">50°</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 11: Vertical Angles -->
+        <section class="slide w-full h-full" id="slide-11">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <div class="flex justify-between items-end w-full mb-6 border-b border-purple-500/40 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2 text-blue-400">Vertical Angles</h2>
+                        <h3 class="text-xl text-gray-200">Opposite angles are ALWAYS equal.</h3>
+                    </div>
+                    <button onclick="goToSlide(6)" class="btn-secondary flex items-center gap-2 z-50 relative">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"></path></svg>
+                        Back to Pairs
+                    </button>
+                </div>
+                
+                <div class="flex flex-col items-center w-full max-w-4xl mx-auto">
+                    <div class="svg-bg rounded-xl w-full flex items-center justify-center relative p-4 mb-6" style="height: 350px;">
+                         <svg viewBox="-200 -200 400 400" class="w-full h-full relative z-10 font-sans">
+                            <!-- Base Horizontal Line -->
+                            <line x1="-180" y1="0" x2="180" y2="0" stroke="#D1D5DB" stroke-width="5" marker-start="url(#arrow-gray-light)" marker-end="url(#arrow-gray-light)"/>
+                            
+                            <!-- Dynamic Rotating Line -->
+                            <g id="vert-dynamic-line">
+                                <line x1="-180" y1="0" x2="180" y2="0" stroke="#60A5FA" stroke-width="5" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+                            </g>
+
+                            <!-- Arcs -->
+                            <!-- Top Right (Green) -->
+                            <path id="vert-arc-1" fill="none" stroke="#34D399" stroke-width="5" opacity="0.9"/>
+                            <!-- Top Left (Orange) -->
+                            <path id="vert-arc-2" fill="none" stroke="#FBBF24" stroke-width="5" opacity="0.9"/>
+                            <!-- Bottom Left (Green) -->
+                            <path id="vert-arc-3" fill="none" stroke="#34D399" stroke-width="5" opacity="0.9"/>
+                            <!-- Bottom Right (Orange) -->
+                            <path id="vert-arc-4" fill="none" stroke="#FBBF24" stroke-width="5" opacity="0.9"/>
+
+                            <!-- Vertex -->
+                            <circle cx="0" cy="0" r="7" fill="white" />
+                            
+                            <!-- Labels (Swapped colors to match arcs correctly) -->
+                            <g font-weight="bold" font-size="20" dominant-baseline="middle" text-anchor="middle">
+                                <text id="vert-label-tl" x="0" y="0" fill="#FDE68A">50°</text> <!-- TL is Orange -->
+                                <text id="vert-label-br" x="0" y="0" fill="#FDE68A">50°</text> <!-- BR is Orange -->
+                                <text id="vert-label-tr" x="0" y="0" fill="#A7F3D0">130°</text> <!-- TR is Green -->
+                                <text id="vert-label-bl" x="0" y="0" fill="#A7F3D0">130°</text> <!-- BL is Green -->
+                            </g>
+                        </svg>
+                    </div>
+
+                    <div class="glass-panel p-6 w-full flex flex-col items-center gap-4">
+                        <p class="text-gray-100 text-lg font-medium">Rotate the intersecting line to see the relationships.</p>
+                        <input type="range" id="vert-slider" min="15" max="165" value="130" class="w-2/3">
+                        
+                        <div class="grid grid-cols-2 gap-8 mt-4 w-full max-w-xl text-center font-mono text-2xl bg-gray-900/60 p-4 rounded-xl border border-gray-600 shadow-lg text-white">
+                            <div>
+                                <span class="text-sm block text-gray-300 mb-1 font-sans">Orange Pair (Vertical)</span>
+                                <span id="vert-val-orange-1" class="text-amber-400 font-bold">50°</span> = <span id="vert-val-orange-2" class="text-amber-400 font-bold">50°</span>
+                            </div>
+                            <div>
+                                <span class="text-sm block text-gray-300 mb-1 font-sans">Green Pair (Vertical)</span>
+                                <span id="vert-val-green-1" class="text-green-400 font-bold">130°</span> = <span id="vert-val-green-2" class="text-green-400 font-bold">130°</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 12: Summary Table Hover -->
+        <section class="slide w-full h-full" id="slide-12">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <div class="w-full mb-6 text-center">
+                    <h2 class="text-3xl font-bold text-white mb-2">The Ultimate Intersection</h2>
+                    <p class="text-gray-200 text-lg">Hover over the table rows to highlight the angle pairs.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center w-full">
+                    <!-- Diagram -->
+                    <div class="svg-bg rounded-xl aspect-square flex items-center justify-center p-4">
+                        <svg viewBox="-150 -150 300 300" class="w-full h-full">
+                            <line x1="-120" y1="50" x2="120" y2="-50" stroke="#9CA3AF" stroke-width="5" id="sum-line-1" marker-start="url(#arrow-gray)" marker-end="url(#arrow-gray)"/>
+                            <line x1="-80" y1="-100" x2="80" y2="100" stroke="#9CA3AF" stroke-width="5" id="sum-line-2" marker-start="url(#arrow-gray)" marker-end="url(#arrow-gray)"/>
+                            
+                            <!-- Hover areas / Arcs -->
+                            <path id="sum-a1" d="M -42 -52 A 60 60 0 0 1 48 -20" fill="none" stroke="transparent" stroke-width="15" class="transition-all duration-300"/>
+                            <path id="sum-a2" d="M 48 -20 A 60 60 0 0 1 28 35" fill="none" stroke="transparent" stroke-width="15" class="transition-all duration-300"/>
+                            <path id="sum-a3" d="M 28 35 A 60 60 0 0 1 -48 20" fill="none" stroke="transparent" stroke-width="15" class="transition-all duration-300"/>
+                            <path id="sum-a4" d="M -48 20 A 60 60 0 0 1 -42 -52" fill="none" stroke="transparent" stroke-width="15" class="transition-all duration-300"/>
+
+                            <!-- Labels -->
+                            <circle cx="0" cy="0" r="25" fill="#374151" />
+                            <text x="0" y="-40" fill="white" font-size="18" text-anchor="middle" font-weight="bold">∠1</text>
+                            <text x="45" y="10" fill="white" font-size="18" text-anchor="middle" font-weight="bold">∠2</text>
+                            <text x="0" y="55" fill="white" font-size="18" text-anchor="middle" font-weight="bold">∠3</text>
+                            <text x="-45" y="10" fill="white" font-size="18" text-anchor="middle" font-weight="bold">∠4</text>
+                        </svg>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="glass-panel overflow-x-auto w-full">
+                        <table class="w-full text-left text-gray-100 border-collapse text-sm md:text-lg whitespace-nowrap min-w-[500px]">
+                            <thead>
+                                <tr class="bg-purple-900/60 border-b border-purple-400/50">
+                                    <th class="p-4 font-bold text-white">Angle Pair</th>
+                                    <th class="p-4 font-bold text-white">Relationship</th>
+                                    <th class="p-4 font-bold text-white">Property</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-600/50 hover:bg-purple-800/40 cursor-pointer transition" onmouseenter="highlight('sum-a1', 'sum-a2')" onmouseleave="resetHighlight()">
+                                    <td class="p-4 font-mono text-purple-300 font-bold">∠1 & ∠2</td>
+                                    <td class="p-4">Linear Pair (Adjacent)</td>
+                                    <td class="p-4 text-base">Sum to 180°</td>
+                                </tr>
+                                <tr class="border-b border-gray-600/50 hover:bg-purple-800/40 cursor-pointer transition" onmouseenter="highlight('sum-a1', 'sum-a3')" onmouseleave="resetHighlight()">
+                                    <td class="p-4 font-mono text-amber-300 font-bold">∠1 & ∠3</td>
+                                    <td class="p-4 font-bold text-white">Vertical Angles</td>
+                                    <td class="p-4 text-base">Always Equal (≅)</td>
+                                </tr>
+                                <tr class="border-b border-gray-600/50 hover:bg-purple-800/40 cursor-pointer transition" onmouseenter="highlight('sum-a2', 'sum-a4')" onmouseleave="resetHighlight()">
+                                    <td class="p-4 font-mono text-amber-300 font-bold">∠2 & ∠4</td>
+                                    <td class="p-4 font-bold text-white">Vertical Angles</td>
+                                    <td class="p-4 text-base">Always Equal (≅)</td>
+                                </tr>
+                                 <tr class="hover:bg-purple-800/40 cursor-pointer transition" onmouseenter="highlight('sum-a3', 'sum-a4')" onmouseleave="resetHighlight()">
+                                    <td class="p-4 font-mono text-purple-300 font-bold">∠3 & ∠4</td>
+                                    <td class="p-4">Linear Pair (Adjacent)</td>
+                                    <td class="p-4 text-base">Sum to 180°</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 13: Solution to Hook -->
+        <section class="slide w-full h-full" id="slide-13">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <div class="w-full mb-8 text-center">
+                    <h2 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-400 mb-2">Intersection Solved!</h2>
+                    <h3 class="text-xl text-gray-200">Applying Angle Pairs in Real Life</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center glass-panel p-8 border border-green-500/30">
+                    <div class="svg-bg rounded-xl aspect-video flex items-center justify-center relative p-4 border border-gray-600">
+                        <svg viewBox="-100 -100 200 200" class="w-full h-full">
+                            <!-- Road Background -->
+                            <rect x="-150" y="-150" width="300" height="300" fill="#1f2937" />
+                            <!-- Road 1 -->
+                            <line x1="-150" y1="0" x2="150" y2="0" stroke="#374151" stroke-width="40" />
+                            <line x1="-150" y1="0" x2="150" y2="0" stroke="#FBBF24" stroke-width="2" stroke-dasharray="10 5" />
+                            <!-- Road 2 (Angled) -->
+                            <g transform="rotate(-40)">
+                                <line x1="-150" y1="0" x2="150" y2="0" stroke="#374151" stroke-width="40" />
+                                <line x1="-150" y1="0" x2="150" y2="0" stroke="#FBBF24" stroke-width="2" stroke-dasharray="10 5" />
+                            </g>
+                            
+                            <!-- The Angles -->
+                            <!-- Known 40 -->
+                            <path d="M 30 0 A 30 30 0 0 0 23 -19" fill="none" stroke="#60A5FA" stroke-width="5" />
+                            <text x="45" y="-10" fill="#93C5FD" font-size="16" font-weight="bold">40°</text>
+                            
+                            <!-- Vertical 40 -->
+                            <path d="M -30 0 A 30 30 0 0 0 -23 19" fill="none" stroke="#60A5FA" stroke-width="5" />
+                            <text x="-45" y="15" fill="#93C5FD" font-size="16" font-weight="bold">40°</text>
+
+                            <!-- Linear Pair 140 -->
+                            <path d="M 23 -19 A 30 30 0 0 0 -30 0" fill="none" stroke="#F472B6" stroke-width="5" />
+                            <text x="0" y="-35" fill="#F9A8D4" font-size="16" font-weight="bold">140°</text>
+
+                            <!-- Vertical 140 -->
+                            <path d="M -23 19 A 30 30 0 0 0 30 0" fill="none" stroke="#F472B6" stroke-width="5" />
+                            <text x="0" y="45" fill="#F9A8D4" font-size="16" font-weight="bold">140°</text>
+                        </svg>
+                    </div>
+                    <div>
+                        <ul class="space-y-4 text-lg text-gray-100">
+                            <li class="flex gap-4 items-start">
+                                <span class="w-8 h-8 flex-shrink-0 bg-blue-500 rounded-full flex items-center justify-center font-bold text-white">1</span>
+                                <p><strong>Vertical Angles:</strong> The angle directly across from 40° is its vertical pair, making it exactly <strong class="text-blue-400">40°</strong>.</p>
+                            </li>
+                            <li class="flex gap-4 items-start">
+                                <span class="w-8 h-8 flex-shrink-0 bg-pink-500 rounded-full flex items-center justify-center font-bold text-white">2</span>
+                                <p><strong>Linear Pairs:</strong> The road is a straight line (180°). The angle adjacent to 40° forms a linear pair: <span class="font-mono bg-black/50 px-2 py-1 rounded text-pink-300">180° - 40° = 140°</span>.</p>
+                            </li>
+                            <li class="flex gap-4 items-start">
+                                <span class="w-8 h-8 flex-shrink-0 bg-purple-500 rounded-full flex items-center justify-center font-bold text-white">3</span>
+                                <p><strong>The Final Angle:</strong> The last angle is vertical to 140°, making it <strong class="text-pink-400">140°</strong> as well.</p>
+                            </li>
+                        </ul>
+                        <div class="mt-6 p-4 bg-green-900/40 border border-green-500/50 rounded-xl text-center shadow-lg">
+                            <p class="text-green-300 font-semibold italic text-lg">Problem Solved! All 4 corners calculated purely from a single 40° measurement.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 14: Quick Quiz (using proportional small arrows) -->
+        <section class="slide w-full h-full text-center" id="slide-14">
+            <div class="w-full max-w-5xl flex flex-col justify-center h-full">
+                <h2 class="text-4xl font-bold text-white mb-10">Quick Check!</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                    <!-- Q1 -->
+                    <div class="glass-panel p-6 flex flex-col items-center h-80 relative group">
+                        <h3 class="text-gray-200 font-semibold mb-4 text-lg">1. What type of angle pair?</h3>
+                        <svg viewBox="0 0 100 100" class="w-32 h-32 mb-4 drop-shadow-md">
+                            <line x1="20" y1="80" x2="80" y2="80" stroke="white" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-white-small)"/>
+                            <line x1="20" y1="80" x2="20" y2="20" stroke="white" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-white-small)"/>
+                            <line x1="20" y1="80" x2="60" y2="40" stroke="#C084FC" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-purple-small)"/>
+                            <text x="35" y="45" fill="white" font-size="12" font-weight="bold">35°</text>
+                            <text x="50" y="70" fill="white" font-size="12" font-weight="bold">55°</text>
+                        </svg>
+                        
+                        <button class="btn-primary mt-auto w-full z-10 relative overflow-hidden" onclick="revealAnswer(this)">
+                            Reveal Answer
+                        </button>
+                        
+                        <div class="absolute inset-0 bg-gray-900 rounded-xl flex items-center justify-center p-4 opacity-0 scale-95 pointer-events-none transition-all duration-300 answer-card flex-col border-2 border-purple-500 z-20">
+                            <span class="text-2xl font-bold text-amber-400 mb-2">Complementary</span>
+                            <span class="text-gray-200 text-lg">35° + 55° = 90°</span>
+                            <button class="mt-4 text-sm text-gray-400 hover:text-white underline" onclick="hideAnswer(this)">Close</button>
+                        </div>
+                    </div>
+
+                    <!-- Q2 -->
+                    <div class="glass-panel p-6 flex flex-col items-center h-80 relative group">
+                        <h3 class="text-gray-200 font-semibold mb-4 text-lg">2. What type of angle pair?</h3>
+                        <svg viewBox="0 0 100 100" class="w-32 h-32 mb-4 drop-shadow-md">
+                            <line x1="10" y1="80" x2="90" y2="80" stroke="white" stroke-width="5" stroke-linecap="round" marker-start="url(#arrow-white-small)" marker-end="url(#arrow-white-small)"/>
+                            <line x1="50" y1="80" x2="30" y2="30" stroke="#34D399" stroke-width="5" stroke-linecap="round" marker-end="url(#arrow-green-small)"/>
+                            <text x="25" y="70" fill="white" font-size="12" font-weight="bold">120°</text>
+                            <text x="65" y="70" fill="white" font-size="12" font-weight="bold">60°</text>
+                        </svg>
+                        
+                        <button class="btn-primary mt-auto w-full z-10 relative" onclick="revealAnswer(this)">
+                            Reveal Answer
+                        </button>
+
+                        <div class="absolute inset-0 bg-gray-900 rounded-xl flex items-center justify-center p-4 opacity-0 scale-95 pointer-events-none transition-all duration-300 answer-card flex-col border-2 border-green-500 z-20">
+                            <span class="text-2xl font-bold text-green-400 mb-2">Linear Pair</span>
+                            <span class="text-gray-200 text-lg">Adjacent + 180°</span>
+                            <button class="mt-4 text-sm text-gray-400 hover:text-white underline" onclick="hideAnswer(this)">Close</button>
+                        </div>
+                    </div>
+
+                    <!-- Q3 -->
+                    <div class="glass-panel p-6 flex flex-col items-center h-80 relative group">
+                        <h3 class="text-gray-200 font-semibold mb-4 text-lg">3. Are ∠1 and ∠3 equal?</h3>
+                        <svg viewBox="0 0 100 100" class="w-32 h-32 mb-4 drop-shadow-md">
+                            <line x1="20" y1="20" x2="80" y2="80" stroke="white" stroke-width="5" stroke-linecap="round" marker-start="url(#arrow-white-small)" marker-end="url(#arrow-white-small)"/>
+                            <line x1="20" y1="80" x2="80" y2="20" stroke="white" stroke-width="5" stroke-linecap="round" marker-start="url(#arrow-white-small)" marker-end="url(#arrow-white-small)"/>
+                            <text x="50" y="30" fill="#FBBF24" font-size="16" font-weight="bold" text-anchor="middle">∠1</text>
+                            <text x="50" y="80" fill="#FBBF24" font-size="16" font-weight="bold" text-anchor="middle">∠3</text>
+                        </svg>
+                        
+                        <button class="btn-primary mt-auto w-full z-10 relative" onclick="revealAnswer(this)">
+                            Reveal Answer
+                        </button>
+
+                        <div class="absolute inset-0 bg-gray-900 rounded-xl flex items-center justify-center p-4 opacity-0 scale-95 pointer-events-none transition-all duration-300 answer-card flex-col border-2 border-blue-500 z-20">
+                            <span class="text-3xl font-bold text-blue-400 mb-2">YES!</span>
+                            <span class="text-gray-200 text-lg">They are Vertical Angles.</span>
+                            <button class="mt-4 text-sm text-gray-400 hover:text-white underline" onclick="hideAnswer(this)">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 15: Post-Test -->
+        <section class="slide w-full h-full" id="slide-15">
+            <div class="w-full max-w-4xl flex flex-col justify-center items-center h-full">
+                <div class="glass-panel p-8 w-full relative min-h-[450px] flex flex-col border border-purple-400/50">
+                    <div class="flex justify-between items-center border-b border-purple-400/40 pb-4 mb-6">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                            Post-Test Assessment
+                        </h2>
+                        <span class="bg-purple-900 text-purple-200 px-3 py-1 rounded-full text-sm font-mono border border-purple-400/50" id="posttest-counter">Question 1 of 5</span>
+                    </div>
+                    
+                    <div id="posttest-content" class="flex-grow flex flex-col justify-center transition-opacity duration-300">
+                        <h3 id="posttest-q" class="text-xl md:text-2xl text-white mb-8 text-center font-semibold leading-relaxed">Loading question...</h3>
+                        <div id="posttest-options" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Options injected by JS -->
+                        </div>
+                    </div>
+
+                    <div id="posttest-results" class="hidden flex-grow flex-col items-center justify-center text-center animate-fade-in">
+                        <div class="w-24 h-24 bg-purple-500/20 rounded-full flex items-center justify-center mb-6 border border-purple-500/50">
+                            <svg class="w-12 h-12 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <h3 class="text-3xl font-bold text-white mb-2">Lesson Complete!</h3>
+                        <p class="text-xl text-gray-200 mb-8">Your Final Score is <span id="posttest-score-text" class="text-amber-400 font-bold text-3xl mx-2">0/5</span></p>
+                        <button onclick="nextSlide()" class="btn-primary">Continue to Exit Ticket</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 16: Exit Ticket -->
+        <section class="slide w-full h-full" id="slide-16">
+            <div class="w-full max-w-4xl flex flex-col justify-center items-center h-full">
+                <div class="glass-panel p-10 relative overflow-hidden border-2 border-amber-500/50 w-full">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 to-orange-500"></div>
+                    
+                    <h2 class="text-4xl font-bold text-white mb-4 text-center">3-2-1 Exit Ticket</h2>
+                    <p class="text-center text-gray-200 text-lg mb-10">Write down your answers on a piece of paper before leaving the class!</p>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-gray-900/60 p-6 rounded-xl border-l-4 border-fuchsia-500 shadow-md">
+                            <h3 class="text-2xl font-bold text-fuchsia-400 mb-2 flex gap-3">
+                                <span class="bg-fuchsia-500 text-white w-8 h-8 flex items-center justify-center rounded-full text-lg">3</span>
+                                Things you learned today:
+                            </h3>
+                            <p class="text-gray-100 text-lg pl-11">Name three different types of angle pairs.</p>
+                        </div>
+
+                        <div class="bg-gray-900/60 p-6 rounded-xl border-l-4 border-cyan-500 shadow-md">
+                            <h3 class="text-2xl font-bold text-cyan-400 mb-2 flex gap-3">
+                                <span class="bg-cyan-500 text-white w-8 h-8 flex items-center justify-center rounded-full text-lg">2</span>
+                                Things that sum to 180°:
+                            </h3>
+                            <p class="text-gray-100 text-lg pl-11">Which two angle pairs always equal exactly 180 degrees?</p>
+                        </div>
+
+                        <div class="bg-gray-900/60 p-6 rounded-xl border-l-4 border-amber-500 shadow-md">
+                            <h3 class="text-2xl font-bold text-amber-400 mb-2 flex gap-3">
+                                <span class="bg-amber-500 text-white w-8 h-8 flex items-center justify-center rounded-full text-lg">1</span>
+                                Question you still have:
+                            </h3>
+                            <p class="text-gray-100 text-lg pl-11">What is one thing about angles that you are still curious or confused about?</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 text-center">
+                        <button onclick="nextSlide()" class="btn-primary px-8">Finish Presentation</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 17: Growth Mindset Ending -->
+        <section class="slide w-full h-full" id="slide-17">
+            <div class="w-full max-w-4xl flex flex-col justify-center items-center h-full">
+                <div class="glass-panel p-12 relative overflow-hidden border border-purple-500/40 w-full text-center shadow-2xl">
+                    <div class="absolute -top-10 -left-10 w-48 h-48 bg-fuchsia-500 rounded-full blur-3xl opacity-30"></div>
+                    <div class="absolute -bottom-10 -right-10 w-48 h-48 bg-amber-500 rounded-full blur-3xl opacity-30"></div>
+                    
+                    <div class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-tr from-amber-400 to-orange-500 rounded-full mb-8 shadow-lg">
+                        <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+
+                    <h2 class="text-5xl font-bold text-white mb-6 tracking-tight">You Are Capable of <span class="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-amber-400">Amazing</span> Things</h2>
+                    
+                    <p class="text-2xl text-gray-200 mb-8 leading-relaxed font-light">
+                        Geometry is like a puzzle. Every angle you figure out, every relationship you understand, makes your brain stronger and sharper.
+                    </p>
+
+                    <div class="bg-purple-900/40 border border-purple-500/30 p-6 rounded-xl inline-block max-w-2xl">
+                        <p class="text-purple-200 font-semibold italic text-xl">"Mistakes are just proof that you are trying. Keep pushing your limits, stay curious, and never stop growing!"</p>
+                    </div>
+
+                    <div class="mt-12">
+                        <button onclick="goToSlide(0); resetTimerUI();" class="btn-primary px-8 py-3 text-lg">Restart Exploration</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Controls -->
+    <footer class="p-4 flex justify-between items-center z-10 bg-black/50 backdrop-blur relative border-t border-purple-500/40 shadow-lg">
+        <button id="prev-btn" onclick="prevSlide()" class="btn-primary flex items-center gap-2 z-10 relative" disabled>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Prev
+        </button>
+
+        <!-- Branding Footer Centered -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-90">
+            <p class="text-sm text-gray-200 font-semibold tracking-wide">&copy;2016-2026 wedoIT&trade;Solutions</p>
+            <p class="text-[10px] text-purple-300 italic tracking-wider mt-0.5">Developed by raymindcreativez&trade;</p>
+        </div>
+
+        <button id="next-btn" onclick="nextSlide()" class="btn-primary flex items-center gap-2 z-10 relative">
+            Next
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </button>
+    </footer>
+
+</div>
+
+<script>
+    // --- Presentation State & Navigation ---
+    const slides = document.querySelectorAll('.slide');
+    let currentSlide = 0;
+    const totalSlides = slides.length;
+
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const slideCounter = document.getElementById('slide-counter');
+
+    function updateUI() {
+        slides.forEach((slide, index) => {
+            if (index === currentSlide) {
+                slide.classList.add('active');
+            } else {
+                slide.classList.remove('active');
+            }
+        });
+
+        prevBtn.disabled = currentSlide === 0;
+        
+        if (currentSlide === totalSlides - 1) {
+            nextBtn.style.display = 'none';
+        } else {
+            nextBtn.style.display = 'flex';
+        }
+
+        const progressPercent = ((currentSlide) / (totalSlides - 1)) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+        slideCounter.innerText = `Slide ${currentSlide + 1} of ${totalSlides}`;
+        
+        // Target index 5 is the 'Build an angle' slide
+        if(currentSlide === 5) resetBuildStep(); 
+    }
+
+    function nextSlide() {
+        if (currentSlide < totalSlides - 1) {
+            currentSlide++;
+            updateUI();
+        }
+    }
+
+    function prevSlide() {
+        if (currentSlide > 0) {
+            currentSlide--;
+            updateUI();
+        }
+    }
+
+    function goToSlide(index) {
+        if(index >= 0 && index < totalSlides) {
+            currentSlide = index;
+            updateUI();
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'Space') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    // --- Stopwatch Logic ---
+    let timerInterval = null;
+    let timerSeconds = 0;
+    let timerRunning = false;
+
+    function formatTime(sec) {
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    function toggleTimer() {
+        const stopwatchEl = document.getElementById('stopwatch');
+        if (timerRunning) {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            stopwatchEl.classList.add('text-gray-400', 'animate-pulse');
+            stopwatchEl.classList.remove('text-amber-400');
+        } else {
+            timerInterval = setInterval(() => {
+                timerSeconds++;
+                stopwatchEl.textContent = formatTime(timerSeconds);
+            }, 1000);
+            timerRunning = true;
+            stopwatchEl.classList.remove('text-gray-400', 'animate-pulse');
+            stopwatchEl.classList.add('text-amber-400');
+        }
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        timerSeconds = 0;
+        timerRunning = false;
+        
+        const stopwatchEl = document.getElementById('stopwatch');
+        stopwatchEl.textContent = formatTime(0);
+        stopwatchEl.classList.remove('text-gray-400', 'animate-pulse');
+        
+        toggleTimer(); // Restart the timer
+    }
+    
+    // Explicit UI call that doesn't conflict with any automated slide calls
+    function resetTimerUI() {
+        resetTimer();
+    }
+
+    // --- Quizzes Logic ---
+    const pretestQuestions = [
+        { q: "What is the standard unit of measurement for angles?", opts: ["Degrees", "Inches", "Liters", "Grams"], ans: 0 },
+        { q: "What do we call the common endpoint where two rays meet to form an angle?", opts: ["Line", "Intersection", "Vertex", "Origin"], ans: 2 },
+        { q: "If two angles add up to exactly 90°, they are called...?", opts: ["Supplementary", "Complementary", "Vertical", "Adjacent"], ans: 1 },
+        { q: "A straight line has an angle measure of...?", opts: ["90°", "180°", "360°", "0°"], ans: 1 },
+        { q: "Angles that are opposite each other when two lines cross are called...?", opts: ["Vertical Angles", "Adjacent Angles", "Parallel Pairs", "Linear Pairs"], ans: 0 }
+    ];
+
+    const posttestQuestions = [
+        { q: "Angle A is 40°. What is its complementary angle?", opts: ["140°", "40°", "50°", "90°"], ans: 2 },
+        { q: "Angle B is 110°. What is its supplementary angle?", opts: ["70°", "110°", "90°", "180°"], ans: 0 },
+        { q: "Two angles form a Linear Pair. If one is 85°, the other must be...?", opts: ["85°", "95°", "5°", "180°"], ans: 1 },
+        { q: "Vertical angles are always...?", opts: ["Supplementary", "Complementary", "Equal to each other", "Adjacent"], ans: 2 },
+        { q: "If two angles share a vertex and a side, but do not overlap, they are...?", opts: ["Adjacent", "Vertical", "Opposite", "Straight"], ans: 0 }
+    ];
+
+    function initQuiz(prefix, questions) {
+        let current = 0;
+        let score = 0;
+        
+        const qEl = document.getElementById(`${prefix}-q`);
+        const optsEl = document.getElementById(`${prefix}-options`);
+        const counterEl = document.getElementById(`${prefix}-counter`);
+        const contentEl = document.getElementById(`${prefix}-content`);
+        const resultsEl = document.getElementById(`${prefix}-results`);
+        const scoreTextEl = document.getElementById(`${prefix}-score-text`);
+        
+        function render() {
+            if (current >= questions.length) {
+                contentEl.classList.add('hidden');
+                resultsEl.classList.remove('hidden');
+                resultsEl.classList.add('flex');
+                scoreTextEl.innerText = `${score}/${questions.length}`;
+                return;
+            }
+            
+            const q = questions[current];
+            qEl.innerText = q.q;
+            counterEl.innerText = `Question ${current + 1} of ${questions.length}`;
+            
+            optsEl.innerHTML = '';
+            q.opts.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "quiz-btn w-full text-left p-4 rounded-xl bg-purple-900/60 hover:bg-purple-700 transition border border-purple-400 text-lg text-white font-medium";
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswer(idx, q.ans, btn);
+                optsEl.appendChild(btn);
+            });
+        }
+        
+        function handleAnswer(selectedIdx, correctIdx, btnEl) {
+            Array.from(optsEl.children).forEach(b => b.disabled = true);
+            
+            const baseClasses = ['bg-purple-900/60', 'border-purple-400', 'hover:bg-purple-700'];
+            if (selectedIdx === correctIdx) {
+                btnEl.classList.remove(...baseClasses);
+                btnEl.classList.add('bg-green-600', 'border-green-400');
+                score++;
+            } else {
+                btnEl.classList.remove(...baseClasses);
+                btnEl.classList.add('bg-red-600', 'border-red-400');
+                const correctBtn = optsEl.children[correctIdx];
+                correctBtn.classList.remove(...baseClasses);
+                correctBtn.classList.add('bg-green-600', 'border-green-400');
+            }
+            
+            setTimeout(() => {
+                current++;
+                render();
+            }, 1500);
+        }
+        render();
+    }
+
+
+    // --- SVG Math Helpers ---
+    function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+        var angleInRadians = (angleInDegrees) * Math.PI / 180.0;
+        return {
+            x: centerX + (radius * Math.cos(angleInRadians)),
+            y: centerY + (radius * Math.sin(angleInRadians))
+        };
+    }
+
+    // A completely stable arc drawing function strictly reliant on correct numerical bounds
+    function describeArc(x, y, radius, startAngle, endAngle) {
+        var start = polarToCartesian(x, y, radius, startAngle);
+        var end = polarToCartesian(x, y, radius, endAngle);
+        
+        // Always ensuring endAngle is numerically greater to maintain sweepFlag=1 consistently for visual mapping
+        var sweepFlag = endAngle > startAngle ? 1 : 0;
+        var largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
+        
+        return [
+            "M", start.x, start.y,
+            "A", radius, radius, 0, largeArcFlag, sweepFlag, end.x, end.y
+        ].join(" ");
+    }
+
+
+    // --- Slide 5 (Fundamentals Build) ---
+    function buildAngleStep(step) {
+        const g = document.getElementById(`s2-g-${step}`);
+        if(g) {
+            g.classList.remove('opacity-0');
+            g.classList.add('fade-in-element');
+        }
+        
+        const btn = document.getElementById(`btn-build-${step}`);
+        btn.classList.add('bg-purple-900', 'border-purple-400');
+        btn.classList.remove('bg-gray-800/50', 'border-gray-500', 'hover:bg-purple-700', 'text-gray-300');
+        btn.classList.add('text-white');
+        btn.onclick = null; 
+
+        if(step < 4) {
+            const nextBtn = document.getElementById(`btn-build-${step+1}`);
+            nextBtn.disabled = false;
+            nextBtn.classList.remove('opacity-50', 'bg-gray-800/50', 'text-gray-300');
+            nextBtn.classList.add('bg-purple-900/60', 'hover:bg-purple-700', 'border-purple-400', 'text-white');
+        }
+    }
+
+    function resetBuildStep() {
+        for(let i=1; i<=4; i++) {
+            const g = document.getElementById(`s2-g-${i}`);
+            if(g) { g.classList.add('opacity-0'); g.classList.remove('fade-in-element'); }
+            
+            const btn = document.getElementById(`btn-build-${i}`);
+            if(i===1) {
+                btn.disabled = false;
+                btn.onclick = () => buildAngleStep(1);
+                btn.className = "w-full text-left p-3 rounded bg-purple-900/60 hover:bg-purple-700 transition border border-purple-400 flex items-center gap-3 text-white";
+            } else {
+                btn.disabled = true;
+                btn.onclick = () => buildAngleStep(i);
+                btn.className = "w-full text-left p-3 rounded bg-gray-800/50 opacity-50 transition border border-gray-500 flex items-center gap-3 text-gray-300";
+            }
+        }
+    }
+
+
+    // --- Slide 7 (Adjacent) ---
+    const adjSlider = document.getElementById('adj-slider');
+    function updateAdjacent() {
+        let val1 = parseInt(adjSlider.value); // Angle from baseline (0)
+        let val2 = 120 - val1;
+        
+        document.getElementById('adj-val-1').textContent = val1 + "°";
+        document.getElementById('adj-val-2').textContent = val2 + "°";
+        
+        let visualAngle = -val1;
+        document.getElementById('adj-dynamic-ray').setAttribute('transform', `rotate(${visualAngle})`);
+        
+        document.getElementById('adj-arc-1').setAttribute('d', describeArc(0, 0, 70, visualAngle, 0));
+        document.getElementById('adj-arc-2').setAttribute('d', describeArc(0, 0, 90, -120, visualAngle));
+        
+        let pos1 = polarToCartesian(0, 0, 105, visualAngle / 2);
+        let l1 = document.getElementById('adj-label-1');
+        l1.textContent = val1 + "°";
+        l1.setAttribute('x', pos1.x); l1.setAttribute('y', pos1.y);
+
+        let pos2 = polarToCartesian(0, 0, 125, visualAngle - (val2/2));
+        let l2 = document.getElementById('adj-label-2');
+        l2.textContent = val2 + "°";
+        l2.setAttribute('x', pos2.x); l2.setAttribute('y', pos2.y);
+    }
+    adjSlider.addEventListener('input', updateAdjacent);
+
+
+    // --- Slide 8 (Complementary) ---
+    const compSlider = document.getElementById('comp-slider');
+    function updateComplementary() {
+        let val1 = parseInt(compSlider.value);
+        let val2 = 90 - val1;
+        
+        document.getElementById('comp-val-1').textContent = val1 + "°";
+        document.getElementById('comp-val-2').textContent = val2 + "°";
+
+        let visualAngle = -val1; 
+        document.getElementById('comp-dynamic-ray').setAttribute('transform', `rotate(${visualAngle})`);
+
+        document.getElementById('comp-arc-1').setAttribute('d', describeArc(0, 0, 80, visualAngle, 0));
+        document.getElementById('comp-arc-2').setAttribute('d', describeArc(0, 0, 100, -90, visualAngle));
+
+        let pos1 = polarToCartesian(0, 0, 115, visualAngle / 2);
+        let l1 = document.getElementById('comp-label-1');
+        l1.textContent = val1 + "°";
+        l1.setAttribute('x', pos1.x); l1.setAttribute('y', pos1.y);
+
+        let pos2 = polarToCartesian(0, 0, 135, visualAngle - (val2/2));
+        let l2 = document.getElementById('comp-label-2');
+        l2.textContent = val2 + "°";
+        l2.setAttribute('x', pos2.x); l2.setAttribute('y', pos2.y);
+    }
+    compSlider.addEventListener('input', updateComplementary);
+
+
+    // --- Slide 9 (Supplementary Separated with enlarged components) ---
+    const sepSuppSlider = document.getElementById('sep-supp-slider');
+    function updateSepSupp() {
+        let val1 = parseInt(sepSuppSlider.value); // Right Side (e.g. 130)
+        let val2 = 180 - val1;                    // Left Side (e.g. 50)
+        
+        // Match the logic of Linear Pair: Left Side = val2, Right Side = val1
+        document.getElementById('sep-supp-val-1').textContent = val2 + "°"; 
+        document.getElementById('sep-supp-val-2').textContent = val1 + "°"; 
+
+        // Angle 1 (Left Side - Mirrors left half of Linear Pair)
+        document.getElementById('sep-supp-ray-1').setAttribute('transform', `rotate(${val2})`);
+        // Radial curves scaled up from 55 to 75 for larger layout
+        document.getElementById('sep-supp-arc-1').setAttribute('d', describeArc(0, 0, 75, -180, -180 + val2));
+
+        // Angle 2 (Right Side - Mirrors right half of Linear Pair)
+        document.getElementById('sep-supp-ray-2').setAttribute('transform', `rotate(${-val1})`);
+        // Radial curves scaled up from 55 to 75 for larger layout
+        document.getElementById('sep-supp-arc-2').setAttribute('d', describeArc(0, 0, 75, -val1, 0));
+
+        // Text positions translated further away proportional to the new larger size (from 85 to 110)
+        let pos1 = polarToCartesian(0, 0, 110, -180 + (val2 / 2));
+        let l1 = document.getElementById('sep-supp-label-1');
+        l1.textContent = val2 + "°";
+        l1.setAttribute('x', pos1.x); l1.setAttribute('y', pos1.y);
+
+        let pos2 = polarToCartesian(0, 0, 110, -val1 / 2);
+        let l2 = document.getElementById('sep-supp-label-2');
+        l2.textContent = val1 + "°";
+        l2.setAttribute('x', pos2.x); l2.setAttribute('y', pos2.y);
+    }
+    sepSuppSlider.addEventListener('input', updateSepSupp);
+
+
+    // --- Slide 10 (Linear Pair / Attached Supplementary) ---
+    const linSlider = document.getElementById('lin-slider');
+    function updateLinearPair() {
+        let val1 = parseInt(linSlider.value); // Right side angle
+        let val2 = 180 - val1; // Left side angle
+        
+        document.getElementById('lin-val-1').textContent = val1 + "°";
+        document.getElementById('lin-val-2').textContent = val2 + "°";
+
+        let visualAngle = -val1;
+        document.getElementById('lin-dynamic-ray').setAttribute('transform', `rotate(${visualAngle})`);
+
+        document.getElementById('lin-arc-1').setAttribute('d', describeArc(0, 0, 60, visualAngle, 0));
+        document.getElementById('lin-arc-2').setAttribute('d', describeArc(0, 0, 80, -180, visualAngle));
+
+        let pos1 = polarToCartesian(0, 0, 95, visualAngle / 2);
+        let l1 = document.getElementById('lin-label-1');
+        l1.textContent = val1 + "°";
+        l1.setAttribute('x', pos1.x); l1.setAttribute('y', pos1.y);
+
+        let pos2 = polarToCartesian(0, 0, 115, visualAngle - (val2/2));
+        let l2 = document.getElementById('lin-label-2');
+        l2.textContent = val2 + "°";
+        l2.setAttribute('x', pos2.x); l2.setAttribute('y', pos2.y);
+    }
+    linSlider.addEventListener('input', updateLinearPair);
+
+
+    // --- Slide 11 (Vertical - FIXED Logic & Swapped Colors) ---
+    const vertSlider = document.getElementById('vert-slider');
+    function updateVertical() {
+        let val = parseInt(vertSlider.value); // Positive angle (15 to 165)
+        let rotation = -val; // SVG visual rotation (negative is up/counter-clockwise)
+        
+        document.getElementById('vert-dynamic-line').setAttribute('transform', `rotate(${rotation})`);
+        
+        // Exact rigorous ordering for standard describeArc: startAngle < endAngle ALWAYS.
+        // TR (Green Arc):
+        document.getElementById('vert-arc-1').setAttribute('d', describeArc(0, 0, 60, rotation, 0));
+        // TL (Orange Arc): 
+        document.getElementById('vert-arc-2').setAttribute('d', describeArc(0, 0, 50, -180, rotation));
+        // BL (Green Arc):
+        document.getElementById('vert-arc-3').setAttribute('d', describeArc(0, 0, 60, rotation - 180, -180));
+        // BR (Orange Arc):
+        document.getElementById('vert-arc-4').setAttribute('d', describeArc(0, 0, 50, -360, rotation - 180));
+
+        // Let TR be Green Arc value, TL be Orange Arc value
+        let valTR = val;            // Green Pair Value
+        let valTL = 180 - val;      // Orange Pair Value
+
+        let vLtr = document.getElementById('vert-label-tr');
+        let vLtl = document.getElementById('vert-label-tl');
+        let vLbl = document.getElementById('vert-label-bl');
+        let vLbr = document.getElementById('vert-label-br');
+
+        vLtr.textContent = valTR + "°"; // TR (Green)
+        vLbl.textContent = valTR + "°"; // BL (Green)
+        vLtl.textContent = valTL + "°"; // TL (Orange)
+        vLbr.textContent = valTL + "°"; // BR (Orange)
+
+        // SWAPPED Assignment to match correct pair colors
+        document.getElementById('vert-val-orange-1').textContent = valTL + "°";
+        document.getElementById('vert-val-orange-2').textContent = valTL + "°";
+        document.getElementById('vert-val-green-1').textContent = valTR + "°";
+        document.getElementById('vert-val-green-2').textContent = valTR + "°";
+
+        // Place labels exactly halfway through the arcs
+        let pTR = polarToCartesian(0, 0, 85, rotation / 2);
+        vLtr.setAttribute('x', pTR.x); vLtr.setAttribute('y', pTR.y);
+
+        let pTL = polarToCartesian(0, 0, 75, -180 + (180 - val) / 2);
+        vLtl.setAttribute('x', pTL.x); vLtl.setAttribute('y', pTL.y);
+
+        let pBL = polarToCartesian(0, 0, 85, -180 + rotation / 2);
+        vLbl.setAttribute('x', pBL.x); vLbl.setAttribute('y', pBL.y);
+
+        let pBR = polarToCartesian(0, 0, 75, -360 + (180 - val) / 2);
+        vLbr.setAttribute('x', pBR.x); vLbr.setAttribute('y', pBR.y);
+    }
+    vertSlider.addEventListener('input', updateVertical);
+
+
+    // --- Slide 12 (Table Hover) ---
+    function highlight(id1, id2) {
+        document.getElementById(id1).classList.add('highlight-path');
+        if(id2) document.getElementById(id2).classList.add('highlight-path');
+    }
+    function resetHighlight() {
+        const paths = ['sum-a1', 'sum-a2', 'sum-a3', 'sum-a4'];
+        paths.forEach(id => {
+            document.getElementById(id).classList.remove('highlight-path');
+        });
+    }
+
+    // --- Slide 14 (Quiz Checks) ---
+    function revealAnswer(btn) {
+        const card = btn.nextElementSibling;
+        card.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+        card.classList.add('opacity-100', 'scale-100', 'pointer-events-auto');
+    }
+
+    // --- Answer Cards ---
+    function hideAnswer(btn) {
+        const card = btn.parentElement;
+        card.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+        card.classList.remove('opacity-100', 'scale-100', 'pointer-events-auto');
+    }
+
+
+    // --- Initialize Everything ---
+    window.onload = function() {
+        updateUI();
+        initQuiz('pretest', pretestQuestions);
+        initQuiz('posttest', posttestQuestions);
+        
+        // Force init interactive states
+        updateAdjacent();
+        updateComplementary();
+        updateSepSupp();
+        updateLinearPair();
+        updateVertical();
+
+        // Start Stopwatch
+        toggleTimer();
+    };
+
+</script>
+
+</body>
+</html>
